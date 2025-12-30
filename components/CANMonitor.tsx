@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { CANFrame, ConversionLibrary } from '../types.ts';
-import { Terminal, Hash, Lock, Unlock, RefreshCw, Clock } from 'lucide-react';
+import { Terminal, Hash, Lock, Unlock, RefreshCw, Clock, Timer } from 'lucide-react';
 
 interface CANMonitorProps {
   frames: CANFrame[];
@@ -13,6 +13,7 @@ interface CANMonitorProps {
 const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace }) => {
   const [autoScroll, setAutoScroll] = useState(true);
   const [isResetting, setIsResetting] = useState(false);
+  const [timeMode, setTimeMode] = useState<'relative' | 'absolute'>('relative');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll logic for Classic trace view
@@ -31,25 +32,39 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
   const renderClassicHeaders = () => (
     <div className="sticky top-0 bg-black z-30 pt-4 pb-2 select-none font-mono text-[13px] text-[#888] whitespace-pre border-b border-white/10">
 {`;  Message Number
-;  |      Time Offset (ms)
+;  |      ${timeMode === 'relative' ? 'Time Offset (s)' : 'System Time   '}
 ;  |      |      Type
-;  |      |      |      Data Length
-;  |      |      |      |      Data Bytes (hex) ...
-;  |      |      |      |      |
+;  |      |      |      ID (hex)
+;  |      |      |      |      Data Length
+;  |      |      |      |      |      Data Bytes (hex) ...
+;  |      |      |      |      |      |
 ;--+--      ---+---      ---+---      +   -+ -- -- -- -- -- -- -- --`}
     </div>
   );
 
   const formatClassicRow = (frame: CANFrame, index: number) => {
     const idx = (index + 1).toString().padStart(5, ' ') + ')'; 
-    const time = (frame.timestamp / 1000).toFixed(1).padStart(13, ' ');
+    
+    let timeStr = "";
+    if (timeMode === 'relative') {
+      // High precision seconds (4 decimals)
+      timeStr = (frame.timestamp / 1000).toFixed(4).padStart(13, ' ');
+    } else {
+      // Human readable RTC time
+      const date = new Date(frame.absoluteTimestamp);
+      timeStr = date.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) 
+                + "." + date.getMilliseconds().toString().padStart(3, '0');
+      timeStr = timeStr.padStart(13, ' ');
+    }
+
     const type = frame.direction.padStart(13, ' ');
+    const id = frame.id.replace('0x', '').padStart(13, ' ');
     const dlc = frame.dlc.toString().padStart(7, ' ');
     const data = "   " + frame.data.join(' ');
 
     return (
       <div key={`${frame.absoluteTimestamp}-${index}`} className="flex hover:bg-white/5 transition-colors leading-tight h-5 items-center font-mono text-[13px] text-[#f0f0f0]">
-        <span className="whitespace-pre">{idx}{time}{type}{dlc}{data}</span>
+        <span className="whitespace-pre">{idx}{timeStr}{type}{id}{dlc}{data}</span>
       </div>
     );
   };
@@ -61,6 +76,14 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
           <div className="flex items-center gap-2 px-3 py-1 bg-black/40 rounded border border-white/5 text-[9px] font-orbitron font-black text-indigo-400">
             <Terminal size={10} /> PCAN_TRACE_CLASSIC
           </div>
+
+          <button 
+            onClick={() => setTimeMode(timeMode === 'relative' ? 'absolute' : 'relative')}
+            className="flex items-center gap-2 px-3 py-1 rounded text-[8px] font-orbitron font-black uppercase transition-all border bg-slate-800 border-white/5 text-slate-300 hover:border-indigo-500/50"
+          >
+            {timeMode === 'relative' ? <Timer size={10} /> : <Clock size={10} />}
+            {timeMode === 'relative' ? 'RELATIVE_MODE' : 'SYSTEM_TIME_MODE'}
+          </button>
 
           <button 
             onClick={() => setAutoScroll(!autoScroll)}
@@ -114,7 +137,7 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
       <div className="bg-[#111] px-6 py-1.5 border-t border-white/5 flex justify-between items-center text-[8px] font-orbitron font-black text-slate-600 uppercase tracking-widest shrink-0">
         <div className="flex gap-4">
           <span>Display: CLASSIC_TRACE</span>
-          <span>RTC_SYNC: ON</span>
+          <span>Precision: 0.0001s</span>
         </div>
       </div>
     </div>

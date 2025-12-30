@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { Database, Plus, Trash2, RefreshCw, Box, Settings2, ArrowUpToLine, ArrowDownToLine, Zap, Activity, Info, Lock, Unlock } from 'lucide-react';
+import { Database, Plus, Trash2, RefreshCw, Box, Settings2, ArrowUpToLine, ArrowDownToLine, Zap, Activity, Info, Lock, Unlock, Hash } from 'lucide-react';
 import { ConversionLibrary, DBCMessage, DBCSignal, CANFrame } from '../types.ts';
 import { MY_CUSTOM_DBC } from '../data/dbcProfiles.ts';
 import { decToHex, normalizeId, decodeSignal } from '../utils/decoder.ts';
@@ -121,6 +121,7 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({ library, onUpdateLibrary, f
             {activeDBCMessages.map(({ id, message }) => {
               const normDbcId = normalizeId(id);
               const latestFrame = latestFramesMap.get(normDbcId);
+              const hexIdDisplay = decToHex(id);
               
               const filteredSignals = Object.values(message.signals).filter(sig => 
                 searchTerm === '' || 
@@ -136,6 +137,9 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({ library, onUpdateLibrary, f
                       </div>
                       <div>
                         <span className="text-[11px] font-orbitron font-black text-white uppercase tracking-wider block mt-0.5">{message.name}</span>
+                        <span className="text-[8px] font-mono text-indigo-400 font-black uppercase tracking-widest flex items-center gap-1 mt-1">
+                          <Hash size={8} /> {hexIdDisplay}
+                        </span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">

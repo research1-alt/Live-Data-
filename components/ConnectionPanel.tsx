@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Terminal, Copy, ShieldCheck, Activity, FileCode, Zap, ArrowRight, AlertCircle, AlertTriangle, Info, Monitor, Radio, Sparkles, Download, MousePointer2, Command } from 'lucide-react';
-import { ConnectionStatus, HardwareStatus } from '../types';
+import { Terminal, Copy, ShieldCheck, Activity, FileCode, Zap, ArrowRight, AlertCircle, AlertTriangle, Info, Monitor, Radio, Sparkles, Download, CheckCircle2, ExternalLink, Cpu, MousePointer2, Settings2 } from 'lucide-react';
+import { ConnectionStatus, HardwareStatus } from '../types.ts';
 
 interface ConnectionPanelProps {
   status: ConnectionStatus;
@@ -18,22 +18,16 @@ interface ConnectionPanelProps {
 const BAUD_RATES = [1000000, 500000, 250000, 125000];
 
 const ConnectionPanel: React.FC<ConnectionPanelProps> = ({ status, hwStatus = 'offline', onConnect, onStartDemo, onDisconnect, url, setUrl, baudRate, setBaudRate }) => {
-  const [copied, setCopied] = useState(false);
-  const [cmdCopied, setCmdCopied] = useState(false);
   const [method, setMethod] = useState<'demo' | 'python'>('demo');
+  const [copied, setCopied] = useState(false);
 
   const pythonBridgeCode = `
-import asyncio
-import websockets
-import json
-import can
-import sys
+import asyncio, websockets, json, can, sys
 
 async def handle_dashboard(ws):
     print(">>> Hardware Link Established.")
     bus = None
     try:
-        # Initializing PCAN Hardware via python-can
         bus = can.interface.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=${baudRate})
         print(f">>> Listening on PCAN_USBBUS1 at ${baudRate} bps")
         while True:
@@ -56,55 +50,52 @@ async def handle_dashboard(ws):
 async def main():
     async with websockets.serve(handle_dashboard, "localhost", 9000):
         print(">>> Bridge Ready on ws://localhost:9000")
-        print(">>> Keep this window open while using the dashboard.")
         await asyncio.Future()
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\\n>>> Bridge Terminated.")
         sys.exit(0)
 `.trim();
 
   const downloadShortcut = () => {
     const batContent = `@echo off
 title OSM PCAN Bridge Launcher
-echo ========================================
-echo   OSM TACTICAL PCAN BRIDGE STARTUP
-echo ========================================
+echo ==================================================
+echo   PCAN HARDWARE BRIDGE AUTO-REPAIR
+echo ==================================================
 echo.
-echo [1/3] Checking Dependencies...
-pip install python-can websockets --quiet
-echo [OK] Environment Ready
+echo [1/3] Checking Python...
+python --version >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [CRITICAL] Python is not found. 
+    echo Please install Python from python.org and CHECK 'ADD TO PATH'.
+    pause && exit
+)
+
+echo [2/3] Installing/Verifying 'python-can' and 'websockets'...
+python -m pip install python-can websockets --upgrade
+if %errorlevel% neq 0 (
+    echo [WARNING] Pip failed. Trying with --user...
+    python -m pip install python-can websockets --user
+)
+
 echo.
-echo [2/3] Generating Bridge Script...
-(
-${pythonBridgeCode.split('\n').map(line => `echo ${line.replace(/[<>|&^]/g, '^$&')}`).join('\n')}
-) > osm_bridge.py
-echo [OK] script generated: osm_bridge.py
-echo.
-echo [3/3] Launching WebSocket Server...
-echo >>> DO NOT CLOSE THIS WINDOW
-python osm_bridge.py
+echo [3/3] Launching Bridge...
+echo ${pythonBridgeCode.replace(/[<>|&^]/g, '^$&')} > pcan_bridge.py
+python pcan_bridge.py
 pause`;
 
     const blob = new Blob([batContent], { type: 'text/plain' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'Launch_OSM_Bridge.bat';
+    link.download = 'Fix_and_Launch_Bridge.bat';
     link.click();
   };
 
-  const copyManualCommand = () => {
-    const oneLiner = `pip install python-can websockets && python -c "import asyncio, websockets, json, can; async def h(w): b=can.Bus(bustype='pcan', channel='PCAN_USBBUS1', bitrate=${baudRate}); print('Linked');\n  while 1:\n    m=b.recv(0.1)\n    if m: await w.send(json.dumps({'type':'frame','payload':{'id':hex(m.arbitration_id),'dlc':m.dlc,'data':[f'{x:02X}' for x in m.data]}}))\nasync def m():\n  async with websockets.serve(h, 'localhost', 9000): await asyncio.Future()\nasyncio.run(m())"`;
-    navigator.clipboard.writeText(oneLiner);
-    setCmdCopied(true);
-    setTimeout(() => setCmdCopied(false), 2000);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(pythonBridgeCode);
+  const copyFixCommand = () => {
+    navigator.clipboard.writeText("pip install python-can websockets");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -122,94 +113,80 @@ pause`;
           onClick={() => setMethod('python')}
           className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[9px] font-orbitron font-black uppercase transition-all ${method === 'python' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-300'}`}
         >
-          <FileCode size={14} /> PCAN_Bridge
+          <Cpu size={14} /> Hardware_Link
         </button>
       </div>
 
-      {method === 'demo' && (
-        <div className="glass-panel border border-emerald-500/30 rounded-3xl p-8 shadow-2xl relative overflow-hidden group">
-          <div className="relative z-10">
-            <h3 className="text-xl font-orbitron font-black text-white uppercase mb-2">Internal_Simulator</h3>
-            <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-8">Direct Browser Execution • No Setup</p>
-            <div className="bg-emerald-500/10 border border-emerald-500/20 p-5 rounded-2xl mb-8 flex items-start gap-4">
-              <Info size={20} className="text-emerald-400 shrink-0" />
-              <p className="text-[10px] text-slate-300 leading-relaxed uppercase font-medium">
-                Generates high-fidelity simulated telemetry. Use this for testing UI/Logic without hardware present.
-              </p>
-            </div>
-            <button 
-              onClick={onStartDemo}
-              className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[12px] font-orbitron font-black uppercase tracking-[0.4em] transition-all shadow-2xl flex items-center justify-center gap-3 active:scale-95 border border-emerald-400/30"
-            >
-              RUN_VIRTUAL_BUS <ArrowRight size={18} />
-            </button>
-          </div>
+      {method === 'demo' ? (
+        <div className="glass-panel border border-emerald-500/30 rounded-3xl p-8 shadow-2xl">
+          <h3 className="text-xl font-orbitron font-black text-white uppercase mb-2">Internal_Simulator</h3>
+          <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest mb-6">Virtual Bus • Runs inside your browser</p>
+          <button onClick={onStartDemo} className="w-full py-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-[12px] font-orbitron font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-3">
+            START_DEMO_DATA <ArrowRight size={18} />
+          </button>
         </div>
-      )}
-
-      {method === 'python' && (
+      ) : (
         <div className="flex flex-col gap-6">
-          <div className="glass-panel border border-amber-500/30 bg-amber-500/5 rounded-3xl p-6">
-            <h3 className="text-[11px] font-orbitron font-black text-amber-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-              <MousePointer2 size={16} /> Persistent_Automation
-            </h3>
-            <p className="text-[10px] text-slate-400 uppercase font-bold mb-4">The bridge script allows the browser to communicate with your PCAN hardware.</p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
-              <button 
-                onClick={downloadShortcut}
-                className="py-4 bg-amber-500/20 border border-amber-500/40 text-amber-400 rounded-2xl text-[9px] font-orbitron font-black uppercase tracking-widest hover:bg-amber-500/30 transition-all flex items-center justify-center gap-3"
-              >
-                <Download size={14} /> Download Launcher
-              </button>
-              <button 
-                onClick={copyManualCommand}
-                className={`py-4 rounded-2xl text-[9px] font-orbitron font-black uppercase tracking-widest transition-all flex items-center justify-center gap-3 border ${
-                  cmdCopied ? 'bg-emerald-500 text-white border-emerald-400' : 'bg-slate-800 border-white/10 text-slate-400 hover:text-white'
-                }`}
-              >
-                <Command size={14} /> {cmdCopied ? 'Copied Command!' : 'Manual CMD Command'}
-              </button>
+          {/* CRITICAL FIX FOR ModuleNotFoundError */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-3xl p-6 relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={20} className="text-amber-400" />
+              <h3 className="text-[11px] font-orbitron font-black text-white uppercase tracking-widest">Fix "ModuleNotFoundError"</h3>
             </div>
-            
-            <div className="mt-4 p-3 bg-red-500/5 border border-red-500/20 rounded-xl flex items-start gap-3">
-              <AlertTriangle size={14} className="text-red-400 shrink-0 mt-0.5" />
-              <p className="text-[8px] text-slate-400 uppercase leading-relaxed">
-                If Windows says "Cannot find file", it is usually due to folder permissions or antivirus. Use the <span className="text-white font-bold">Manual CMD Command</span> button to copy a direct command you can paste into a terminal.
-              </p>
+            <p className="text-[9px] text-slate-300 uppercase leading-relaxed font-bold mb-4">
+              If you see <span className="text-red-400">"No module named 'can'"</span>, run this fix:
+            </p>
+            <div className="flex gap-2">
+               <code className="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-[10px] font-mono text-amber-400 truncate">
+                 pip install python-can websockets
+               </code>
+               <button 
+                onClick={copyFixCommand}
+                className="px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all border border-white/10"
+               >
+                 {copied ? <CheckCircle2 size={16} className="text-emerald-500" /> : <Copy size={16} />}
+               </button>
             </div>
           </div>
 
-          <div className="glass-panel border border-white/10 rounded-3xl p-8 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-[11px] font-orbitron font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <Radio size={16} className="text-indigo-500" /> Relay_Configuration
-              </h3>
-              <div className="flex gap-2">
-                {BAUD_RATES.slice(0, 2).map(r => (
-                  <button key={r} onClick={() => setBaudRate(r)} className={`px-2 py-1 rounded text-[8px] font-black ${baudRate === r ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
-                    {r/1000}K
-                  </button>
-                ))}
-              </div>
+          <div className="glass-panel border border-indigo-500/30 bg-indigo-500/5 rounded-3xl p-6">
+            <h3 className="text-[11px] font-orbitron font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2 mb-6">
+              <ShieldCheck size={16} /> SETUP_AUTO_LAUNCHER
+            </h3>
+            <div className="space-y-4 mb-6">
+              <p className="text-[9px] text-slate-500 uppercase font-black leading-relaxed">
+                The launcher below will automatically install the missing 'can' library for you. 
+                <br/><span className="text-white">Note: Do not run this in "C:\Program Files" (use Desktop).</span>
+              </p>
+              <button onClick={downloadShortcut} className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-orbitron font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-indigo-500/20">
+                <Download size={16} /> DOWNLOAD_AUTO_REPAIR_LAUNCHER (.BAT)
+              </button>
             </div>
-            <input 
-              type="text" 
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={status === 'connected'}
-              className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-4 text-[12px] font-mono text-white focus:outline-none mb-4"
-              placeholder="ws://localhost:9000"
-            />
-            <button 
-              onClick={() => status === 'connected' ? onDisconnect() : onConnect(url)}
-              className={`w-full py-5 rounded-2xl text-[11px] font-orbitron font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-3 ${
-                status === 'connected' ? 'bg-red-500/10 border border-red-500/30 text-red-500' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl'
-              }`}
-            >
-              {status === 'connected' ? 'KILL_BRIDGE' : 'START_LINK'}
-              <ArrowRight size={18} />
-            </button>
+            
+            <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[8px] font-orbitron font-black text-slate-500 uppercase tracking-widest">Target_Endpoint</label>
+                <select 
+                  value={baudRate} 
+                  onChange={(e) => setBaudRate(Number(e.target.value))}
+                  className="bg-slate-800 border border-white/10 rounded px-2 py-0.5 text-[8px] font-black text-indigo-400 focus:outline-none"
+                >
+                  {BAUD_RATES.map(r => <option key={r} value={r}>{r/1000}K Bits/s</option>)}
+                </select>
+              </div>
+              <input 
+                type="text" 
+                value={url} 
+                onChange={(e) => setUrl(e.target.value)}
+                className="bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-[11px] font-mono text-white focus:outline-none focus:border-indigo-500/50"
+              />
+              <button 
+                onClick={() => onConnect(url)}
+                className={`w-full py-4 rounded-xl text-[10px] font-orbitron font-black uppercase tracking-widest transition-all ${status === 'connected' ? 'bg-red-500/10 text-red-400 border border-red-500/40' : 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20'}`}
+              >
+                {status === 'connected' ? 'DISCONNECT_HARDWARE' : 'CONNECT_TO_BRIDGE'}
+              </button>
+            </div>
           </div>
         </div>
       )}
