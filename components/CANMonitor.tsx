@@ -32,13 +32,13 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
   const renderClassicHeaders = () => (
     <div className="sticky top-0 bg-black z-30 pt-4 pb-2 select-none font-mono text-[13px] text-[#888] whitespace-pre border-b border-white/10">
 {`;  Message Number
-;  |      ${timeMode === 'relative' ? 'Time Offset (s)' : 'System Time   '}
-;  |      |      Type
-;  |      |      |      ID (hex)
-;  |      |      |      |      Data Length
-;  |      |      |      |      |      Data Bytes (hex) ...
-;  |      |      |      |      |      |
-;--+--      ---+---      ---+---      +   -+ -- -- -- -- -- -- -- --`}
+;  |           ${timeMode === 'relative' ? 'Time Offset (s)' : 'System Time   '}
+;  |           |               Type
+;  |           |               |        ID (hex)
+;  |           |               |         |         Data Length
+;  |           |               |         |         |         Data Bytes (hex) ...
+;  |           |               |         |         |         |
+;--+--      ---+---        ---+---      +   -+ -- -- -- -- -- -- -- --`}
     </div>
   );
 

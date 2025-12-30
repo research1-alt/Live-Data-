@@ -339,7 +339,6 @@ const App: React.FC = () => {
         </div>
       </header>
       <main className="flex-1 flex overflow-hidden relative">
-        <div className="scanner-beam"></div>
         <div className="flex-1 flex flex-col p-4 min-w-0 transition-all overflow-hidden relative">
            {dashboardTab === 'trace' ? (
              <div className="flex-1 min-h-0 relative glass-panel rounded-2xl border border-white/5 overflow-hidden shadow-2xl">
