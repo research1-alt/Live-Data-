@@ -33,11 +33,10 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
 {`;  Message Number
 ;  |      Time Offset (ms)
 ;  |      |      Type
-;  |      |      |      ID (hex)
-;  |      |      |      |      Data Length
-;  |      |      |      |      |      Data Bytes (hex) ...
-;  |      |      |      |      |      |
-;--+--      ---+---      ---+---      ---+---      +   -+ -- -- -- -- -- -- -- --`}
+;  |      |      |      Data Length
+;  |      |      |      |      Data Bytes (hex) ...
+;  |      |      |      |      |
+;--+--      ---+---      ---+---      +   -+ -- -- -- -- -- -- -- --`}
     </div>
   );
 
@@ -45,13 +44,12 @@ const CANMonitor: React.FC<CANMonitorProps> = ({ frames, isPaused, onClearTrace 
     const idx = (index + 1).toString().padStart(5, ' ') + ')'; 
     const time = (frame.timestamp / 1000).toFixed(1).padStart(13, ' ');
     const type = frame.direction.padStart(13, ' ');
-    const id = frame.id.replace('0x', '').replace('0X', '').padStart(13, ' ');
     const dlc = frame.dlc.toString().padStart(7, ' ');
     const data = "   " + frame.data.join(' ');
 
     return (
       <div key={`${frame.absoluteTimestamp}-${index}`} className="flex hover:bg-white/5 transition-colors leading-tight h-5 items-center font-mono text-[13px] text-[#f0f0f0]">
-        <span className="whitespace-pre">{idx}{time}{type}{id}{dlc}{data}</span>
+        <span className="whitespace-pre">{idx}{time}{type}{dlc}{data}</span>
       </div>
     );
   };

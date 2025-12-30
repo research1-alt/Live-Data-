@@ -7,7 +7,7 @@ import { DBCDatabase } from '../types.ts';
  * The keys are Decimal CAN IDs.
  */
 export const MY_CUSTOM_DBC: DBCDatabase = {
-"405274497": { // 0X1827FF81
+    "405274497": { // 0X1827FF81
         name: "ODOMeter",
         dlc: 8,
         signals: {
@@ -160,7 +160,6 @@ export const MY_CUSTOM_DBC: DBCDatabase = {
             "Speed": { name: "Speed", startBit: 48, length: 8, isLittleEndian: true, isSigned: false, scale: 1, offset: 0, min: 0, max: 100, unit: "Kmph" },
         }
     }
-};
 };
 
 export const DEFAULT_LIBRARY_NAME = "High_Voltage_Telemetry_DBC";

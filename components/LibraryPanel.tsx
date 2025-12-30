@@ -32,23 +32,19 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({ library, onUpdateLibrary, f
     
     (Object.entries(library.database) as [string, DBCMessage][]).forEach(([decId, message]) => {
       const normDbcId = normalizeId(decId);
-      const hexId = decToHex(decId);
       
       // Check if any signal name matches the search term
       const hasMatchingSignal = Object.values(message.signals).some(sig => 
         sig.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
       
-      // Check if the Hex ID matches the search term
-      const matchesHex = hexId.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const isVisible = searchTerm === '' || hasMatchingSignal || matchesHex;
+      const isVisible = searchTerm === '' || hasMatchingSignal;
       
       if (latestFramesMap.has(normDbcId) && isVisible) {
         active.push({ id: decId, message });
       }
     });
-    return active.sort((a, b) => normalizeId(a.id).localeCompare(normalizeId(b.id)));
+    return active.sort((a, b) => a.message.name.localeCompare(b.message.name));
   }, [library.database, latestFramesMap, searchTerm]);
 
   // Auto-scroll logic
@@ -124,14 +120,11 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({ library, onUpdateLibrary, f
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {activeDBCMessages.map(({ id, message }) => {
               const normDbcId = normalizeId(id);
-              const hexDisplay = decToHex(id);
               const latestFrame = latestFramesMap.get(normDbcId);
               
-              // Filter signals within the message card based on the search term
               const filteredSignals = Object.values(message.signals).filter(sig => 
                 searchTerm === '' || 
-                sig.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                hexDisplay.toLowerCase().includes(searchTerm.toLowerCase())
+                sig.name.toLowerCase().includes(searchTerm.toLowerCase())
               );
 
               return (
@@ -142,8 +135,7 @@ const LibraryPanel: React.FC<LibraryPanelProps> = ({ library, onUpdateLibrary, f
                         <Activity className="w-4 h-4 text-indigo-500" />
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono font-bold text-indigo-400 block leading-none">{hexDisplay}</span>
-                        <span className="text-[11px] font-orbitron font-black text-white uppercase tracking-wider block mt-1.5">{message.name}</span>
+                        <span className="text-[11px] font-orbitron font-black text-white uppercase tracking-wider block mt-0.5">{message.name}</span>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
