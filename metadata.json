@@ -1,0 +1,6 @@
+
+{
+  "name": "PCAN Live Insight Dashboard",
+  "description": "A sophisticated CAN bus monitoring and diagnostic tool featuring real-time message visualization and Gemini-powered signal analysis.",
+  "requestFramePermissions": []
+}
